@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+src/school_lab/__init__.py
+src/school_lab.egg-info/PKG-INFO
+src/school_lab.egg-info/SOURCES.txt
+src/school_lab.egg-info/dependency_links.txt
+src/school_lab.egg-info/requires.txt
+src/school_lab.egg-info/top_level.txt
