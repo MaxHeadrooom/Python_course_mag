@@ -26,22 +26,21 @@ def test_same_submission_same_hash() -> None:
 def test_extra_newline_in_code_changes_hash() -> None:
     original = make_submission()
     changed = replace(original, code=original.code + "\n")
-    # TODO: assert, что хеши НЕ равны
-    ...
+    assert submission_hash(original) != submission_hash(changed)
 
 
 def test_other_student_changes_hash() -> None:
-    # TODO: то же самое, но replace(..., student_id="student-002")
-    ...
+    original = make_submission()
+    changed = replace(original, student_id="student-002")
+    assert submission_hash(original) != submission_hash(changed)
 
 
 def test_canonical_json_ignores_key_order() -> None:
-    # TODO: canonical_json({"a": 1, "b": 2}) == canonical_json({"b": 2, "a": 1})
-    ...
+    assert canonical_json({"a": 1, "b": 2}) == canonical_json({"b": 2, "a": 1})
 
 
 def test_declaration_change_changes_hash() -> None:
     original = make_submission()
     new_decl = replace(original.ai_declaration, verified_by_student=False)
-    # TODO: replace(original, ai_declaration=new_decl) → хеш другой
-    ...
+    changed = replace(original, ai_declaration=new_decl)
+    assert submission_hash(original) != submission_hash(changed)
