@@ -53,10 +53,6 @@ class SubmissionIn(BaseModel):
     template_id: str | None
     ai_declaration: AIDeclarationIn
 
-    # TODO 3: по памятке template_id тоже не может быть пустой строкой (но может быть None).
-    #         Добавь "template_id" в список полей ниже и поправь not_blank,
-    #         чтобы None проходил без ошибки (сейчас None.strip() упадёт).
-    #         Не забудь поправить аннотации: value: str | None -> str | None
     @field_validator("submission_id", "student_id", "assignment_id", "template_id")
     @classmethod
     def not_blank(cls, value: str | None) -> str | None:
