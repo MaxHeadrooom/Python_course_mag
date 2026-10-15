@@ -105,3 +105,88 @@ def test_input_is_not_mutated() -> None:
     snapshot = json.dumps(payload)
     parse_submission(json.dumps(payload))
     assert json.dumps(payload) == snapshot
+
+
+# --- Требования из памятки (ячейки 3, 33, 35). Красные, пока не сделаны TODO 1–9 ---
+
+
+def expect_error(raw: str, code: str, field: str) -> None:
+    with pytest.raises(SubmissionError) as exc_info:
+        parse_submission(raw)
+    assert exc_info.value.code == code
+    assert exc_info.value.field == field
+
+
+def test_blank_tool_rejected() -> None:  # TODO 1
+    payload = valid_payload()
+    payload["ai_declaration"]["tool"] = "  "
+    expect_error(json.dumps(payload), "schema_error", "ai_declaration.tool")
+
+
+def test_used_without_tool_and_purpose() -> None:  # TODO 2
+    payload = valid_payload()
+    payload["ai_declaration"]["used"] = True
+    expect_error(json.dumps(payload), "schema_error", "ai_declaration")
+
+
+def test_used_with_tool_and_purpose_ok() -> None:  # TODO 2 — проверка, что не перестарались
+    payload = valid_payload()
+    payload["ai_declaration"] = {
+        "used": True,
+        "tool": "учебный помощник",
+        "purpose": "обсуждение решения",
+        "verified_by_student": True,
+    }
+    assert parse_submission(json.dumps(payload)).ai_declaration.used is True
+
+
+def test_blank_template_id() -> None:  # TODO 3
+    payload = valid_payload()
+    payload["template_id"] = " "
+    expect_error(json.dumps(payload), "schema_error", "template_id")
+
+
+def test_null_template_id_ok() -> None:  # TODO 3 — None по-прежнему разрешён
+    payload = valid_payload()
+    payload["template_id"] = None
+    assert parse_submission(json.dumps(payload)).template_id is None
+
+
+def test_empty_text_and_code() -> None:  # TODO 4 + TODO 9
+    payload = valid_payload()
+    payload["text"] = " "
+    payload["code"] = "\n"
+    expect_error(json.dumps(payload), "schema_error", "$")
+
+
+def test_only_code_is_enough() -> None:  # TODO 4 — одного непустого поля достаточно
+    payload = valid_payload()
+    payload["text"] = ""
+    assert parse_submission(json.dumps(payload)).code == "print(1)\n"
+
+
+def test_repeated_key() -> None:  # TODO 5 + TODO 7
+    raw = json.dumps(valid_payload())[:-1] + ', "student_id": "other"}'
+    expect_error(raw, "invalid_json", "student_id")
+
+
+def test_nan_rejected() -> None:  # TODO 6 + TODO 7
+    expect_error('{"schema_version": NaN}', "invalid_json", "$")
+
+
+def test_version_as_bool() -> None:  # уже работает: strict=True не пускает bool в int
+    payload = valid_payload()
+    payload["schema_version"] = True
+    expect_error(json.dumps(payload), "schema_error", "schema_version")
+
+
+def test_version_as_string() -> None:  # TODO 8
+    payload = valid_payload()
+    payload["schema_version"] = "1"
+    expect_error(json.dumps(payload), "schema_error", "schema_version")
+
+
+def test_missing_nested_field() -> None:  # уже работает: Pydantic требует все поля
+    payload = valid_payload()
+    del payload["ai_declaration"]["verified_by_student"]
+    expect_error(json.dumps(payload), "schema_error", "ai_declaration.verified_by_student")

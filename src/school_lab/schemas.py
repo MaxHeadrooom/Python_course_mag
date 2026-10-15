@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from .models import AIDeclaration, Submission
 
@@ -12,6 +12,24 @@ class AIDeclarationIn(BaseModel):
     tool: str | None
     purpose: str | None
     verified_by_student: bool
+
+    @field_validator("tool", "purpose")
+    @classmethod
+    def optional_not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        if not value.strip():
+            raise ValueError("must be null or non-empty")
+
+        return value
+
+    @model_validator(mode="after")
+    def tool_and_purpose_when_used(self) -> "AIDeclarationIn":
+        if self.used and (self.tool is None or self.purpose is None):
+            raise ValueError("tool and purpose are required when used=true")
+
+        return self
 
     def to_domain(self) -> AIDeclaration:
         return AIDeclaration(
@@ -35,9 +53,16 @@ class SubmissionIn(BaseModel):
     template_id: str | None
     ai_declaration: AIDeclarationIn
 
-    @field_validator("submission_id", "student_id", "assignment_id")
+    # TODO 3: по памятке template_id тоже не может быть пустой строкой (но может быть None).
+    #         Добавь "template_id" в список полей ниже и поправь not_blank,
+    #         чтобы None проходил без ошибки (сейчас None.strip() упадёт).
+    #         Не забудь поправить аннотации: value: str | None -> str | None
+    @field_validator("submission_id", "student_id", "assignment_id", "template_id")
     @classmethod
-    def not_blank(cls, value: str) -> str:
+    def not_blank(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
         if not value.strip():
             raise ValueError("must not be empty")
         return value
@@ -51,6 +76,12 @@ class SubmissionIn(BaseModel):
             raise ValueError("timezone is required")
 
         return value
+
+    @model_validator(mode="after")
+    def text_or_code(self) -> "SubmissionIn":
+        if not self.text.strip() and not self.code.strip():
+            raise ValueError("text or code must be non-empty")
+        return self
 
     def to_domain(self) -> Submission:
         return Submission(
