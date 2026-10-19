@@ -8,7 +8,6 @@ from school_lab.models import Submission
 from school_lab.repository import InMemorySubmissionRepository
 from school_lab.service import SubmissionService, accept_payload
 
-
 # --- Репозиторий ---
 
 
@@ -44,7 +43,7 @@ def test_new_submission_accepted(service: SubmissionService, submission: Submiss
 def test_same_submission_twice_is_duplicate(
     service: SubmissionService, repo: InMemorySubmissionRepository, submission: Submission
 ) -> None:
-    result1 = service.accept(submission)
+    service.accept(submission)
     result2 = service.accept(submission)
 
     assert result2.status == "duplicate"
@@ -88,7 +87,7 @@ def test_accept_payload_invalid_saves_nothing(
     payload["student_id"] = ""
 
     with pytest.raises(SubmissionError) as exc_info:
-        res = accept_payload(service, json.dumps(payload))
+        accept_payload(service, json.dumps(payload))
 
     assert exc_info.value.code == "schema_error"
     assert len(repo) == 0

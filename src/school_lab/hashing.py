@@ -4,6 +4,7 @@ from dataclasses import asdict
 
 from .models import Submission
 
+
 def canonical_json(value: object) -> str:
     return json.dumps(
         value,

@@ -59,6 +59,7 @@ def test_reimport_gives_only_duplicates(service: SubmissionService) -> None:
     summary = import_file(DATA_DIR / "submissions.jsonl", service)
     summary_2 = import_file(DATA_DIR / "submissions.jsonl", service)
 
+    assert len(summary.accepted) == 12
     assert summary_2.accepted == []
     assert len(summary_2.duplicate) == 12
 

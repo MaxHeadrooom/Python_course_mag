@@ -10,7 +10,7 @@ SUPPORTED_SCHEMA_VERSION = 1
 
 
 def reject_repeated_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    data = dict()
+    data: dict[str, object] = {}
 
     for key, word in pairs:
         if key not in data:

@@ -1,4 +1,5 @@
 from dataclasses import replace
+
 from school_lab.hashing import canonical_json, submission_hash
 from school_lab.models import AIDeclaration, Submission
 
