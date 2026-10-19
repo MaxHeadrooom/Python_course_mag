@@ -16,8 +16,9 @@ def canonical_json(value: object) -> str:
 
 def submission_hash(submission: Submission) -> str:
     dict_sub = asdict(submission)
-    canonical = canonical_json(dict_sub).encode("utf-8")
+    return stable_hash(dict_sub)
+
+def stable_hash(value: object) -> str:
+    canonical = canonical_json(value).encode("utf-8")
 
     return hashlib.sha256(canonical).hexdigest()
-
-

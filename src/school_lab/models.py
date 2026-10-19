@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,3 +20,35 @@ class Submission:
     code: str
     template_id: str | None
     ai_declaration: AIDeclaration
+
+@dataclass(frozen=True, slots=True)
+class Assignment:
+    assignment_id: str
+    allowed_template: str
+    requirements: tuple[str, ...]
+
+@dataclass(frozen=True, slots=True)
+class Evidence:
+    submission_id: str
+    field: Literal["text", "code"]
+    start_line: int
+    end_line: int
+
+@dataclass(frozen=True, slots=True)
+class Finding:
+    kind: Literal["similarity", "rubric_feedback", "processing_error"]
+    score: float | None
+    evidence: tuple[Evidence, ...]
+    explanation: str
+
+@dataclass(frozen=True, slots=True)
+class AnalysisReport:
+    report_id: str
+    submission_id: str
+    submission_hash: str
+    analyzer_id: str
+    analyzer_version: str
+    config_hash: str
+    findings: tuple[Finding, ...]
+    created_at: str
+    review_required: bool
