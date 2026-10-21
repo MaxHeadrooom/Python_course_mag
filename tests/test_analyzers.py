@@ -1,9 +1,10 @@
 from dataclasses import replace
+from datetime import datetime
 
 from school_lab import analyzers
-from school_lab.analyzers import AnalysisContext
-from school_lab.hashing import stable_hash
-from school_lab.models import Assignment
+from school_lab.analyzers import AnalysisContext, make_report
+from school_lab.hashing import stable_hash, submission_hash
+from school_lab.models import Assignment, Finding, Submission
 
 
 def test_nonempty_line_numbers() -> None:
@@ -59,3 +60,38 @@ def test_config_hash_changes() -> None:
     hash2 = stable_hash(context2.config_payload())
 
     assert hash1 != hash2
+
+def make_context() -> AnalysisContext:
+    return AnalysisContext(make_assignment())
+
+
+def make_finding() -> Finding:
+    return Finding("rubric_feedback", None, (), "тест")
+
+def test_report_ids_are_unique(submission: Submission) -> None:
+    context = make_context()
+    report1 = make_report(submission, context, "length", "1.0", (make_finding(),))
+    report2 = make_report(submission, context, "length", "1.0", (make_finding(),))
+
+    assert report1.report_id != report2.report_id
+
+
+def test_report_has_submission_hash(submission: Submission) -> None:
+    report = make_report(submission, make_context(), "length", "1.0", (make_finding(),))
+
+    assert report.submission_hash == submission_hash(submission)
+    assert report.submission_id == submission.submission_id
+
+
+def test_report_created_at_has_timezone(submission: Submission) -> None:
+    report = make_report(submission, make_context(), "length", "1.0", (make_finding(),))
+
+    created = datetime.fromisoformat(report.created_at)
+    assert created.tzinfo is not None
+
+
+def test_report_config_hash(submission: Submission) -> None:
+    context = make_context()
+    report = make_report(submission, context, "length", "1.0", (make_finding(),))
+
+    assert report.config_hash == stable_hash(context.config_payload())
