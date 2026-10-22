@@ -164,3 +164,44 @@ def test_length_matches_protocol(submission: Submission) -> None:
     report = analyzer.analyze(submission, make_context())
     assert report.analyzer_id == analyzer.analyzer_id
     assert report.analyzer_version == analyzer.analyzer_version
+
+
+def test_template_changes() -> None:
+    code = "a\nb\na\nb\n"
+    template = "a\nb\n"
+
+    res = analyzers.template_ranges(code, template)
+
+    assert res == ((1, 2), (3, 4))
+
+
+def test_no_match() -> None:
+    code = "a\nb\na\nb\n"
+    template = "phrase"
+
+    res = analyzers.template_ranges(code, template)
+
+    assert res == ()
+
+def test_with_space_template() -> None:
+    code = "a\nb\na\nb\n"
+    template = "     \n"
+    res = analyzers.template_ranges(code, template)
+
+    assert res == ()
+
+
+def test_with_match_on_next_line() -> None:
+    code = "c\nb\na\nb\n   next\n"
+    template = "a\nb\n"
+
+    res = analyzers.template_ranges(code, template)
+
+    assert res == ((3, 4),)
+
+def test_with_one_more_space_template() -> None:
+    code = "a\nb\na\nb\n"
+    template = "a\n   b\n"
+    res = analyzers.template_ranges(code, template)
+
+    assert res == ()

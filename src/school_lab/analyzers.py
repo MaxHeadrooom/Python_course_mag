@@ -41,6 +41,27 @@ def nonempty_line_numbers(text: str) -> tuple[int, ...]:
     return res
 
 
+def template_ranges(source_code: str, template: str) -> tuple[tuple[int, int], ...]:
+    if not template.strip():
+        return ()
+
+    lines_of_code = source_code.splitlines()
+    lines_of_template = template.splitlines()
+
+    res = []
+
+    len_code = len(lines_of_code)
+    len_template = len(lines_of_template)
+
+    for i in range(len_code - len_template + 1):
+        if lines_of_code[i: i + len_template] == lines_of_template:
+            start_line = i + 1
+            end_line = len_template + i
+            res.append((start_line, end_line))
+
+    return tuple(res)
+
+
 def make_report(
     submission: Submission,
     context: AnalysisContext,
