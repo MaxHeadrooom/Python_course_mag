@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
+from .errors import AnalysisFailure
 from .hashing import stable_hash, submission_hash
 from .models import AnalysisReport, Assignment, Evidence, Finding, Submission
 
@@ -134,6 +135,53 @@ class LengthAnalyzer:
             evidence=result,
             explanation=f"not empty lines: text={len(lines_text)}, "
             f"code={len(lines_code)} Length does not measure correctness.",
+        )
+
+        return make_report(
+            submission,
+            context,
+            analyzer_id=self.analyzer_id,
+            analyzer_version=self.analyzer_version,
+            findings=(finding,),
+        )
+
+
+class TemplateAnalyzer:
+    analyzer_id = "template"
+    analyzer_version = "1.0"
+
+    def analyze(self, submission: Submission, context: AnalysisContext) -> AnalysisReport:
+        if submission.assignment_id != context.assignment.assignment_id:
+            raise AnalysisFailure("context belongs to a different assignment")
+
+        ranges = template_ranges(submission.code, context.assignment.allowed_template)
+
+        evidence = tuple(
+            Evidence(
+                submission_id=submission.submission_id,
+                field="code",
+                start_line=start,
+                end_line=end,
+            )
+            for start, end in ranges
+        )
+
+        if ranges:
+            explanation = (
+                f"Allowed template blocks found: {len(ranges)}. "
+                "This is a permitted match, not a reason for sanctions."
+            )
+        else:
+            explanation = (
+                "No exact match with the allowed template. "
+                "Fuzzy similarity was not checked."
+            )
+
+        finding = Finding(
+            kind="similarity",
+            score=None,
+            evidence=evidence,
+            explanation=explanation,
         )
 
         return make_report(

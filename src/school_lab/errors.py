@@ -11,3 +11,7 @@ class SubmissionError(Exception):
 
     def to_dict(self) -> dict[str, str]:
         return {"code":self.code, "field":self.field, "message":self.message}
+
+
+class AnalysisFailure(Exception):
+    """Анализ невозможен или его результат нарушает контракт отчёта."""

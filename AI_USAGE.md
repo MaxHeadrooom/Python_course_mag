@@ -56,13 +56,15 @@
 
 - Описание шагов словами: состав моделей отчёта, протокола и функций, ссылки на разделы памятки, списки сценариев для тестов.
 - `tests/test_analyzers.py`: каркас тестов `make_report` (вспомогательные `make_context`, `make_finding`, заготовки с TODO) и, по моей просьбе, три теста целиком: `test_report_has_submission_hash`, `test_report_created_at_has_timezone`, `test_report_config_hash`.
+- **`TemplateAnalyzer` целиком по моей просьбе** (тело `analyze` в моей заготовке класса): проверка задания, evidence по найденным блокам, два варианта объяснения; исключение `AnalysisFailure` в `errors.py`; тесты `test_template_no_match`, `test_template_match_found`, `test_template_match_not_on_first_line`, `test_template_other_assignment_fails`, `test_template_matches_protocol`.
 - `tests/test_analyzers.py`, тесты `LengthAnalyzer` по моей просьбе: `make_tricky` (сдача с пустыми строками в середине), `test_length_evidence_points_to_nonempty_lines`, `test_length_evidence_line_numbers_are_original`, `test_length_does_not_change_submission`, `test_length_matches_protocol`; в `test_length_single_rubric_finding` — исправленный вариант после двух моих попыток.
 
 ### Что написал я (по описанию и подсказкам ИИ)
 
 - `models.py`: модели `Assignment`, `Evidence`, `Finding`, `AnalysisReport` (frozen dataclass, `Literal`, кортежи вместо списков).
 - `hashing.py`: функция `stable_hash`; `submission_hash` переписан через неё (проверено, что хеш сдачи не изменился).
-- `analyzers.py`: `AnalysisContext` с `config_payload()`, протокол `Analyzer` (`@property` для id и версии), `nonempty_line_numbers`, `make_report`, `LengthAnalyzer`.
+- `analyzers.py`: `AnalysisContext` с `config_payload()`, протокол `Analyzer` (`@property` для id и версии), `nonempty_line_numbers`, `make_report`, `LengthAnalyzer`, `template_ranges` (поиск блоков шаблона по срезам строк).
+- Тесты `template_ranges`: два совпадения, нет совпадения, шаблон из пробелов, совпадение не с первой строки, отличие в отступе.
 - Тесты `LengthAnalyzer`: `test_length_report_metadata`, `test_length_evidence_count`.
 - `tests/test_models.py`: неизменяемость `Evidence` (`FrozenInstanceError`), независимость `stable_hash` от порядка ключей, изменение хеша при изменении значения.
 - `tests/test_analyzers.py`: тесты `nonempty_line_numbers` (включая пустой текст и строки из пробелов), изменение `config_hash` при изменении требований и шаблона задания, уникальность `report_id`.

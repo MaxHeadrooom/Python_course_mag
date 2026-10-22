@@ -2,8 +2,17 @@ from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime
 
+import pytest
+
 from school_lab import analyzers
-from school_lab.analyzers import AnalysisContext, Analyzer, LengthAnalyzer, make_report
+from school_lab.analyzers import (
+    AnalysisContext,
+    Analyzer,
+    LengthAnalyzer,
+    TemplateAnalyzer,
+    make_report,
+)
+from school_lab.errors import AnalysisFailure
 from school_lab.hashing import stable_hash, submission_hash
 from school_lab.models import Assignment, Finding, Submission
 
@@ -205,3 +214,55 @@ def test_with_one_more_space_template() -> None:
     res = analyzers.template_ranges(code, template)
 
     assert res == ()
+
+
+def test_template_no_match(submission: Submission) -> None:
+    report = TemplateAnalyzer().analyze(submission, make_context())
+
+    assert report.analyzer_id == "template"
+    assert len(report.findings) == 1
+    finding = report.findings[0]
+    assert finding.kind == "similarity"
+    assert finding.score is None
+    assert finding.evidence == ()
+
+
+def test_template_match_found(submission: Submission) -> None:
+    with_template = replace(
+        submission,
+        code="from typing import Iterable\n\ndef solve(values):\n    return 0\n",
+    )
+    report = TemplateAnalyzer().analyze(with_template, make_context())
+
+    evidence = report.findings[0].evidence
+    assert len(evidence) == 1
+    assert evidence[0].field == "code"
+    assert (evidence[0].start_line, evidence[0].end_line) == (1, 1)
+    assert evidence[0].submission_id == with_template.submission_id
+    assert "permitted" in report.findings[0].explanation
+
+
+def test_template_match_not_on_first_line(submission: Submission) -> None:
+    with_template = replace(
+        submission,
+        code="# comment\n\nfrom typing import Iterable\n",
+    )
+    report = TemplateAnalyzer().analyze(with_template, make_context())
+
+    evidence = report.findings[0].evidence
+    assert [(e.start_line, e.end_line) for e in evidence] == [(3, 3)]
+
+
+def test_template_other_assignment_fails(submission: Submission) -> None:
+    other = AnalysisContext(replace(make_assignment(), assignment_id="assignment-99"))
+
+    with pytest.raises(AnalysisFailure):
+        TemplateAnalyzer().analyze(submission, other)
+
+
+def test_template_matches_protocol(submission: Submission) -> None:
+    analyzer: Analyzer = TemplateAnalyzer()
+    report = analyzer.analyze(submission, make_context())
+    assert report.analyzer_id == analyzer.analyzer_id
+    assert report.analyzer_version == analyzer.analyzer_version
+
