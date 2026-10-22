@@ -1,4 +1,4 @@
-from .analyzers import AnalysisContext
+from .analyzers import AnalysisContext, validate_report
 from .errors import AnalysisFailure
 from .models import AnalysisReport
 from .registry import AnalyzerRegistry
@@ -22,6 +22,8 @@ class AnalysisService:
         analyzer = self.registry.create(analyzer_name)
 
         report = analyzer.analyze(submission, context)
+
+        validate_report(report, submission, context)
 
         if report.analyzer_id != analyzer.analyzer_id or analyzer.analyzer_version != report.analyzer_version:
             raise AnalysisFailure("Analysis id doesn't match submission")

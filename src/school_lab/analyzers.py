@@ -1,3 +1,4 @@
+import math
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -93,6 +94,74 @@ def make_report(
         created_at=created_at,
         submission_id=submission_id,
     )
+
+
+FINDING_KINDS = frozenset({"similarity", "rubric_feedback", "processing_error"})
+EVIDENCE_FIELDS = frozenset({"text", "code"})
+
+
+def validate_report(
+    report: AnalysisReport, submission: Submission, context: AnalysisContext
+) -> None:
+    """Проверка отчёта на границе: аннотация -> AnalysisReport ничего не гарантирует
+    во время выполнения, поэтому отчёт стороннего анализатора проверяется явно."""
+    # Часть 1: отчёт в целом
+    if not isinstance(report, AnalysisReport):
+        raise AnalysisFailure("analyzer must return AnalysisReport")
+
+    if (
+        report.submission_id != submission.submission_id
+        or report.submission_hash != submission_hash(submission)
+    ):
+        raise AnalysisFailure("report refers to another version of the submission")
+
+    if report.config_hash != stable_hash(context.config_payload()):
+        raise AnalysisFailure("report was made with another configuration")
+
+    if not report.report_id or not report.analyzer_id or not report.analyzer_version:
+        raise AnalysisFailure("report_id, analyzer_id and analyzer_version are required")
+
+    if type(report.review_required) is not bool:
+        raise AnalysisFailure("review_required must be bool")
+
+    try:
+        created = datetime.fromisoformat(report.created_at)
+    except (TypeError, ValueError) as e:
+        raise AnalysisFailure("created_at must be an ISO datetime") from e
+    if created.tzinfo is None:
+        raise AnalysisFailure("created_at must contain a timezone")
+
+    # Часть 2: находки и evidence
+    for finding in report.findings:
+        _validate_finding(finding, submission)
+
+
+def _validate_finding(finding: Finding, submission: Submission) -> None:
+    if finding.kind not in FINDING_KINDS:
+        raise AnalysisFailure(f"unknown finding kind: {finding.kind!r}")
+
+    score = finding.score
+    if score is not None:
+        # bool — подкласс int, поэтому True отсекается проверкой type(...), а не isinstance
+        if type(score) not in (int, float):
+            raise AnalysisFailure("score must be a number or None")
+        if not math.isfinite(score) or not 0 <= score <= 1:
+            raise AnalysisFailure("score must be a finite number from 0 to 1")
+
+    if not finding.explanation.strip():
+        raise AnalysisFailure("finding explanation is required")
+
+    for evidence in finding.evidence:
+        if evidence.submission_id != submission.submission_id:
+            raise AnalysisFailure("evidence refers to another submission")
+        if evidence.field not in EVIDENCE_FIELDS:
+            raise AnalysisFailure(f"unknown evidence field: {evidence.field!r}")
+        if type(evidence.start_line) is not int or type(evidence.end_line) is not int:
+            raise AnalysisFailure("evidence line numbers must be int")
+
+        lines = getattr(submission, evidence.field).splitlines()
+        if not 1 <= evidence.start_line <= evidence.end_line <= len(lines):
+            raise AnalysisFailure("evidence is outside the original text")
 
 
 class LengthAnalyzer:
