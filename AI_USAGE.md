@@ -50,7 +50,7 @@
 
 ---
 
-## Этап Б — анализаторы (в процессе)
+## Этап Б — анализаторы
 
 ### Что написал ИИ
 
@@ -59,6 +59,12 @@
 - **`TemplateAnalyzer` целиком по моей просьбе** (тело `analyze` в моей заготовке класса): проверка задания, evidence по найденным блокам, два варианта объяснения; исключение `AnalysisFailure` в `errors.py`; тесты `test_template_no_match`, `test_template_match_found`, `test_template_match_not_on_first_line`, `test_template_other_assignment_fails`, `test_template_matches_protocol`.
 - `registry.py` по моей просьбе доведён до mypy strict: аннотации (`Callable[[], Analyzer]`), проверка пустого имени, сравнение `analyzer_id` с именем регистрации вместо `name.analyzer_id`, сообщения ошибок, `raise ... from e`, относительные импорты. Структура класса (словарь фабрик, `register`, `create` с перехватом `KeyError`) — моя.
 - **`validate_report` по моей просьбе** (начатый мной черновик с первыми проверками исправлен и доделан): проверки отчёта в целом (тип, версия сдачи, конфигурация, обязательные id, `review_required`, `created_at` с часовым поясом), находок (`kind`, `score` — конечное число 0–1 или `None`, не `bool`; объяснение) и evidence (сдача, поле, диапазон строк); вызов в `AnalysisService.run`; тесты `tests/test_validate_report.py`.
+- **По договорённости «JSONLSource — я, остальное — ИИ»** ИИ написал:
+  - `importer.py`: `import_source(source, service)` — импорт из любого источника внутри `with source.open()`; `import_lines` и `import_file` переписаны через `InMemorySource` и `JSONLSource`;
+  - `tests/test_sources.py`: проверки закрытия файла `JSONLSource` (полное чтение, ранний выход, ошибка потребителя), отсутствующий файл как ошибка источника, контрактные тесты обоих источников (fixture с `params`);
+  - `tests/test_importer.py`: импорт из in-memory источника, закрытие файла и проброс неожиданной ошибки (`BrokenService`), закрытие файла после импорта учебного корпуса;
+  - `tests/test_analyzer_contract.py`: общий набор тестов для `LengthAnalyzer` и `TemplateAnalyzer` (валидный отчёт на каждой из 12 учебных сдач, неизменность сдачи, повторяемость findings, `score=None`);
+  - `app.py`: `build_application` (точка сборки зависимостей), `AppConfig` со строгим разбором, проверка конфигурации при сборке (неизвестный, пустой, повторяющийся анализатор, фабрика с чужим id), `load_config`, `load_assignment`; `tests/test_app.py`, включая сквозной сценарий (12 принято, 12 дубликатов при повторе, 24 валидных отчёта).
 - `tests/test_sources.py` по моей просьбе: `test_in_memory_source_can_be_reopened`, `test_in_memory_source_keeps_own_copy`; убран неиспользуемый импорт, переименован мой первый тест.
 - `tests/test_analysis_service.py` целиком по моей просьбе: fixtures `context`, `registry`, `analysis`; тестовые анализаторы `LyingIdAnalyzer`, `LyingVersionAnalyzer` (проверка отказа анализатора) и `DeclarationAnalyzer` (подключение третьего анализатора только регистрацией); тесты успешного запуска, неизменности сдачи, отказов (нет сдачи, неизвестный анализатор, чужое задание, чужой id и версия в отчёте).
 - `tests/test_registry.py` по моей просьбе: удалён тест без проверок, добавлен `test_blank_name`, тесты переименованы, подготовка вынесена из `pytest.raises` в `test_register_again` и `test_name_mismatch_fails`. Сами 6 сценариев написал я.
@@ -71,6 +77,7 @@
 - `analyzers.py`: `AnalysisContext` с `config_payload()`, протокол `Analyzer` (`@property` для id и версии), `nonempty_line_numbers`, `make_report`, `LengthAnalyzer`, `template_ranges` (поиск блоков шаблона по срезам строк).
 - `registry.py`: `AnalyzerRegistry` (словарь фабрик, `register`, `create` с перехватом `KeyError`) и 6 сценариев в `tests/test_registry.py`.
 - `sources.py`: `SourceRecord`, протокол `SubmissionSource`, `InMemorySource` (`@contextmanager`, вложенный генератор записей, копия входного списка); первый тест источника.
+- `sources.py`: `JSONLSource` — открытие файла, генератор записей с `enumerate` и `rstrip("\n")`, закрытие в `finally`, диагностическое поле `last_closed`.
 - `analysis_service.py`: `AnalysisService.run` — получение сдачи, проверка задания, создание анализатора через реестр, проверка отчёта.
 - Тесты `template_ranges`: два совпадения, нет совпадения, шаблон из пробелов, совпадение не с первой строки, отличие в отступе.
 - Тесты `LengthAnalyzer`: `test_length_report_metadata`, `test_length_evidence_count`.
@@ -92,6 +99,7 @@
 - `AnalysisService.run`: id сдачи сравнивался с id задания; не было проверки `None` после `get`; `analyzer_id` отчёта сравнивался со сдачей, затем с объектом анализатора вместо его поля.
 - Черновик `validate_report`: перевёрнутое условие `isinstance`; поля сдачи сравнивались сами с собой, а `config_hash` брался у сдачи вместо отчёта; `and` вместо `or` при проверке пустых id.
 - `sources.py`: метод `open` внутри `SourceRecord` вместо протокола; генератор отдавал записи без данных; `finally: self.lines = []` стирал данные после первого открытия; хранился сам входной список, а не копия.
+- `JSONLSource`: аннотация через `=` вместо `:`; цикл по файлу без `enumerate`; не обрезался `\n`; в `last_closed` записывался тип `bool | None` вместо `handle.closed`.
 - Тесты: `kind`/`score` искались у отчёта, а не у находки (`report.findings[0]`); в `analyze` передавалась находка вместо контекста; сравнивался список `Evidence` с кортежем чисел вместо длин.
 - Лишние автоимпорты PyCharm (`pygments`, `mypy`, `mypyc`) — удалены.
 
