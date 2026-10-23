@@ -5,8 +5,8 @@ from .models import Submission
 
 
 class SubmissionRepository(Protocol):
-        def get(self, submission_id: str) -> Submission | None: ...
-        def add(self, submission: Submission) -> None: ...
+    def get(self, submission_id: str) -> Submission | None: ...
+    def add(self, submission: Submission) -> None: ...
 
 
 class InMemorySubmissionRepository:
@@ -20,8 +20,9 @@ class InMemorySubmissionRepository:
         if submission.submission_id not in self._items:
             self._items[submission.submission_id] = submission
         else:
-            raise SubmissionError("conflict", "submission_id", "id already exists")
-
+            raise SubmissionError(
+                "conflict", "submission_id", "submission_id is already stored"
+            )
 
     def __len__(self) -> int:
         return len(self._items)

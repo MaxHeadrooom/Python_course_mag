@@ -24,9 +24,14 @@ class SubmissionService:
 
         previous = self.repository.get(submission.submission_id)
 
-        if not previous is None:
+        if previous is not None:
             if digest != submission_hash(previous):
-                raise SubmissionError("conflict", "submission_id", "id already exists")
+                raise SubmissionError(
+                    "conflict",
+                    "submission_id",
+                    "submission_id already used with different content; "
+                    "a new version needs a new submission_id",
+                )
             else:
                 return Acceptance("duplicate", submission.submission_id, digest)
         else:

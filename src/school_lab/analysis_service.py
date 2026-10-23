@@ -6,18 +6,22 @@ from .repository import SubmissionRepository
 
 
 class AnalysisService:
-    def __init__(self, repository: SubmissionRepository, registry: AnalyzerRegistry) -> None:
+    def __init__(
+        self, repository: SubmissionRepository, registry: AnalyzerRegistry
+    ) -> None:
         self.repository = repository
         self.registry = registry
 
-    def run(self, submission_id: str, analyzer_name: str, context: AnalysisContext) -> AnalysisReport:
+    def run(
+        self, submission_id: str, analyzer_name: str, context: AnalysisContext
+    ) -> AnalysisReport:
         submission = self.repository.get(submission_id)
 
         if submission is None:
-            raise AnalysisFailure("No such submission")
+            raise AnalysisFailure(f"submission not found: {submission_id}")
 
         if submission.assignment_id != context.assignment.assignment_id:
-            raise AnalysisFailure("Must be same context")
+            raise AnalysisFailure("context belongs to a different assignment")
 
         analyzer = self.registry.create(analyzer_name)
 
@@ -25,7 +29,10 @@ class AnalysisService:
 
         validate_report(report, submission, context)
 
-        if report.analyzer_id != analyzer.analyzer_id or analyzer.analyzer_version != report.analyzer_version:
-            raise AnalysisFailure("Analysis id doesn't match submission")
+        if (
+            report.analyzer_id != analyzer.analyzer_id
+            or analyzer.analyzer_version != report.analyzer_version
+        ):
+            raise AnalysisFailure("report does not match the called analyzer")
 
         return report

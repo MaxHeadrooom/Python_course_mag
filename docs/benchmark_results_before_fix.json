@@ -1,0 +1,82 @@
+{
+  "environment": {
+    "python": "3.13.0",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD"
+  },
+  "sources": [
+    {
+      "size": 1000,
+      "file_kb": 506.4365234375,
+      "jsonl_ms": 2.7483999947435223,
+      "memory_ms": 3.1479000026592985,
+      "jsonl_peak_kb": 53.6259765625,
+      "memory_peak_kb": 1011.966796875
+    },
+    {
+      "size": 10000,
+      "file_kb": 5063.5654296875,
+      "jsonl_ms": 27.33279999665683,
+      "memory_ms": 32.14529999968363,
+      "jsonl_peak_kb": 53.5244140625,
+      "memory_peak_kb": 9932.927734375
+    },
+    {
+      "size": 50000,
+      "file_kb": 25317.4609375,
+      "jsonl_ms": 123.68850000348175,
+      "memory_ms": 162.9573000027449,
+      "jsonl_peak_kb": 53.4755859375,
+      "memory_peak_kb": 49645.60546875
+    }
+  ],
+  "import": [
+    {
+      "size": 1000,
+      "import_ms": 38.61070000129985,
+      "parse_ms": 13.487199998053256,
+      "per_record_us": 38.61070000129985,
+      "records_per_s": 25899.556339727966
+    },
+    {
+      "size": 10000,
+      "import_ms": 379.9619999990682,
+      "parse_ms": 142.70810000016354,
+      "per_record_us": 37.99619999990682,
+      "records_per_s": 26318.421315880332
+    }
+  ],
+  "analysis": [
+    {
+      "analyzer": "length",
+      "input": "12 учебных",
+      "per_submission_us": 31.26250006365202,
+      "with_validation_us": 61.89166651893174,
+      "validation_overhead_pct": 97.97414280021498
+    },
+    {
+      "analyzer": "length",
+      "input": "2000 строк",
+      "per_submission_us": 5196.450001676567,
+      "with_validation_us": 103879.74999684957,
+      "validation_overhead_pct": 1899.0522368796799
+    },
+    {
+      "analyzer": "template",
+      "input": "12 учебных",
+      "per_submission_us": 21.191666443579987,
+      "with_validation_us": 42.18749988164442,
+      "validation_overhead_pct": 99.07589614985245
+    },
+    {
+      "analyzer": "template",
+      "input": "2000 строк",
+      "per_submission_us": 228.64999846206047,
+      "with_validation_us": 383.65000364137813,
+      "validation_overhead_pct": 67.7892001845067
+    }
+  ],
+  "build": {
+    "build_application_us": 2.0000006770715117
+  }
+}

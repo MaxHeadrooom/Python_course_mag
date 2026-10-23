@@ -56,7 +56,7 @@ def template_ranges(source_code: str, template: str) -> tuple[tuple[int, int], .
     len_template = len(lines_of_template)
 
     for i in range(len_code - len_template + 1):
-        if lines_of_code[i: i + len_template] == lines_of_template:
+        if lines_of_code[i : i + len_template] == lines_of_template:
             start_line = i + 1
             end_line = len_template + i
             res.append((start_line, end_line))
@@ -119,7 +119,9 @@ def validate_report(
         raise AnalysisFailure("report was made with another configuration")
 
     if not report.report_id or not report.analyzer_id or not report.analyzer_version:
-        raise AnalysisFailure("report_id, analyzer_id and analyzer_version are required")
+        raise AnalysisFailure(
+            "report_id, analyzer_id and analyzer_version are required"
+        )
 
     if type(report.review_required) is not bool:
         raise AnalysisFailure("review_required must be bool")
@@ -131,12 +133,20 @@ def validate_report(
     if created.tzinfo is None:
         raise AnalysisFailure("created_at must contain a timezone")
 
-    # Часть 2: находки и evidence
+    # Часть 2: находки и evidence.
+    # Число строк считается один раз на поле, а не для каждой evidence:
+    # иначе проверка отчёта с n evidence на тексте из n строк стоит O(n²).
+    line_counts = {
+        "text": len(submission.text.splitlines()),
+        "code": len(submission.code.splitlines()),
+    }
     for finding in report.findings:
-        _validate_finding(finding, submission)
+        _validate_finding(finding, submission, line_counts)
 
 
-def _validate_finding(finding: Finding, submission: Submission) -> None:
+def _validate_finding(
+    finding: Finding, submission: Submission, line_counts: dict[str, int]
+) -> None:
     if finding.kind not in FINDING_KINDS:
         raise AnalysisFailure(f"unknown finding kind: {finding.kind!r}")
 
@@ -159,8 +169,12 @@ def _validate_finding(finding: Finding, submission: Submission) -> None:
         if type(evidence.start_line) is not int or type(evidence.end_line) is not int:
             raise AnalysisFailure("evidence line numbers must be int")
 
-        lines = getattr(submission, evidence.field).splitlines()
-        if not 1 <= evidence.start_line <= evidence.end_line <= len(lines):
+        if (
+            not 1
+            <= evidence.start_line
+            <= evidence.end_line
+            <= line_counts[evidence.field]
+        ):
             raise AnalysisFailure("evidence is outside the original text")
 
 
@@ -219,7 +233,9 @@ class TemplateAnalyzer:
     analyzer_id = "template"
     analyzer_version = "1.0"
 
-    def analyze(self, submission: Submission, context: AnalysisContext) -> AnalysisReport:
+    def analyze(
+        self, submission: Submission, context: AnalysisContext
+    ) -> AnalysisReport:
         if submission.assignment_id != context.assignment.assignment_id:
             raise AnalysisFailure("context belongs to a different assignment")
 
